@@ -2,7 +2,8 @@
 * Made with q5!
 * https://q5js.org
 */
-//i need to add labels. Also; vvvvv
+import * as type from 'https://cdn.jsdelivr.net/npm/opentype.js/dist/opentype.module.js';
+
 await Canvas();
 angleMode(degrees)
 let goodness; //score for overlay
@@ -28,84 +29,100 @@ let nodeAY;
 let nodeBX;
 let nodeBY;
 
-let aCC = createCheckbox('Segment A ccw',false); // should segments a go counterclockwise
-let bCC = createCheckbox('Segment B ccw',true);
-let definitenessOverlay = createCheckbox('overlay 1')
-let betterOverlay = createCheckbox('overlay 2')
-let precisionOverlay = createCheckbox('overlay 3')
-let betterPrecisionOverlay = createCheckbox('overlay 4')
-let nodesOverlay = createCheckbox('angles',false)
-let fineness = createSlider(3,32,4,0.5); // anything less than ~3 for a ~1000x1000 grid is super slow
+const textInput = createInput()
+const addText = createButton('add text')
+const fontUpload = createInput(false, 'file')
+const fontsArray = [] // list of fonts as opentype font objects with their names
+const textStrings = [] //not the points, just the info about each string
+const paths = []
+const fontDropdown = document.createElement('select') //q5 createSelect was not working
 
-let lengthA1Input = createInput(350,'number'); // I know this is dumb but i had some problem and didn't want to debug it
-let lengthA2Input = createInput(350,'number');
-let lengthB1Input = createInput(350,'number');
-let lengthB2Input = createInput(350,'number');
+const aCC = createCheckbox(); // should segments a go counterclockwise
+const bCC = createCheckbox('',true);
+const definitenessOverlay = createCheckbox()
+const betterOverlay = createCheckbox()
+const precisionOverlay = createCheckbox()
+const betterPrecisionOverlay = createCheckbox()
+const nodesOverlay = createCheckbox()
+const fineness = createSlider(3,32,4,0.5); // anything less than ~3 for a ~1000x1000 grid is super slow
 
-let circleAXInput = createInput(0,'number'); // I know this is dumb but i had some problem and didn't want to debug it
-let circleAYInput = createInput(-300,'number');
-let circleBXInput = createInput(0,'number');
-let circleBYInput = createInput(300,'number');
+const lengthA1Input = createInput(350,'number'); // I know this is dumb but i had some problem and didn't want to debug it
+const lengthA2Input = createInput(350,'number');
+const lengthB1Input = createInput(350,'number');
+const lengthB2Input = createInput(350,'number');
 
-let precisionTuner =createSlider(0,2,1,0.00001)
-let photoMode = createCheckbox('hide stuff',false)
-let allAngles = [];
+const circleAXInput = createInput(0,'number'); // I know this is dumb but i had some problem and didn't want to debug it
+const circleAYInput = createInput(-300,'number');
+const circleBXInput = createInput(0,'number');
+const circleBYInput = createInput(300,'number');
 
-lengthA1Input.position(width-100,0).size(100)
-lengthA1Input.title = 'Segment A1 length'
+const precisionTuner = createSlider(0,2,1,0.00001)
+const interactiveMode = createCheckbox('',true)
+const photoMode = createCheckbox()
+const anglesArray = [];
 
-lengthA2Input.position(width-100,20).size(100)
-lengthA2Input.title = 'Segment A2 length'
+lengthA1Input.position(width-100,0).size(100).title = 'Segment A1 length'
+lengthA2Input.position(width-100,20).size(100).title = 'Segment A2 length'
+lengthB1Input.position(width-100,40).size(100).title = 'Segment B1 length'
+lengthB2Input.position(width-100,60).size(100).title = 'Segment B2 length'
 
-lengthB1Input.position(width-100,40).size(100)
-lengthB1Input.title = 'Segment B1 length'
+circleAXInput.position(width-100,80).size(100).title = 'Circle A X coord'
+circleAYInput.position(width-100,100).size(100).title = 'Circle A Y coord'
+circleBXInput.position(width-100,120).size(100).title = 'Circle B X coord'
+circleBYInput.position(width-100,140).size(100).title = 'Circle B Y coord'
 
-lengthB2Input.position(width-100,60).size(100)
-lengthB1Input.title = 'Segment B2 length'
+aCC.position(width-104,160).title = 'Red counterclockwise?'
+bCC.position(width-92,160).title = 'Blue counterclockwise?'
 
-circleAXInput.position(width-100,80).size(100)
-circleAXInput.title = 'Circle A X coord'
+definitenessOverlay.position(width-12,160).title = 'weird overlay... shows distance between nodes to help find bad points'
+betterOverlay.position(width-24,160).title = 'shows angle between nodes to help find bad spots'
+precisionOverlay.position(width-36,160).title = 'intended to show how much changing the position affects an angle to indicate how accurate it would be'
+betterPrecisionOverlay.position(width-48,160).title = 'Also meant to show how much changing the position affects an angle to indicate how accurate it would be'
+nodesOverlay.position(width-60,160).title = 'Just shows the x coordinates of the nodes for each position in red/blue'
 
-circleAYInput.position(width-100,100).size(100)
-circleAYInput.title = 'Circle A Y coord'
+fineness.position(width-100,180).title = 'how coarse the overlays are. right is coarser=less lag'
+precisionTuner.position(width-100,200).title = 'adjusts bounds for one of the overlays'
 
-circleBXInput.position(width-100,120).size(100)
-circleBXInput.title = 'Circle B X coord'
+photoMode.position(width-20, height-20).title = 'hide linkage stuff'
+interactiveMode.position(width-40, height-20).title = 'interactive mode'
 
-circleBYInput.position(width-100,140).size(100)
-circleBYInput.title = 'Circle B Y coord'
+textInput.position(width-100,240).size(100)
+fontUpload.position(width-100,260).setAttribute("accept",".ttf,.woff,.otf")
+fontUpload.style.opacity = 0;
+fontUpload.id = "font-upload"
+fontDropdown.style.position = 'fixed'
+fontDropdown.style.left = `${width-100}px`
+fontDropdown.style.top  = '300px'
 
-aCC.position(width-104,160)
-aCC.title = 'Red counterclockwise?'
+const buffer = fetch('/NotoSans-Regular.ttf').then(res => res.arrayBuffer()); //preload roboto
+buffer.then(data => {
+  fontsArray.push([type.parse(data),'Broken feature - it doesnt work yet']) //Noto Sans
+  const newOption = document.createElement('option')
+  newOption.textContent = fontsArray.at(-1)[1]
+  newOption.value = 0
+  fontDropdown.appendChild(newOption)
+  document.body.appendChild(fontDropdown);
+})
 
-bCC.position(width-92,160) 
-bCC.title = 'Blue counterclockwise?'
+function newFont() { //takes the user uploaded font and adds it to the fonts array alongside its filename
+  const buffer = document.getElementById('font-upload').files[0].arrayBuffer();
+  buffer.then(data => {
+    fontsArray.push([type.parse(data),document.getElementById('font-upload').files[0].name])
+    const newOption = document.createElement('option')
+    newOption.textContent = fontsArray.at(-1)[1]
+    newOption.value = fontsArray.length-1
+    fontDropdown.appendChild(newOption)
+    document.body.appendChild(fontDropdown);
+  })
+}
+fontUpload.addEventListener("change", newFont);
 
-definitenessOverlay.position(width-12,160)
-definitenessOverlay.title = 'weird overlay... shows distance between nodes to help find bad points'
+addText.position(width-100,280).size(100).addEventListener('click', () => {
+  textStrings.push([textInput.value,fontsArray[fontDropdown.value],0,0,72,0]) //Make a simple array which has ['text', font object, topleft x, y, size, angle] <- 0 is straight, 90 is up. size is in pixels
+  textInput.value = ''
+});
 
-betterOverlay.position(width-24,160)
-betterOverlay.title = 'shows angle between nodes to help find bad spots'
-
-precisionOverlay.position(width-36,160)
-precisionOverlay.title = 'intended to show how much changing the position affects an angle to indicate how accurate it would be'
-
-betterPrecisionOverlay.position(width-48,160)
-betterPrecisionOverlay.title = 'Better to show how much changing the position affects an angle to indicate how accurate it would be'
-
-nodesOverlay.position(width-60,160)
-nodesOverlay.title = 'Just shows the x coordinates of the nodes for each position in red/blue'
-
-fineness.position(width-100,180)
-fineness.title = 'how coarse the overlays are. right is coarser=less lag'
-
-precisionTuner.position(width-100,200)
-precisionTuner.title = 'adjusts bounds for one of the overlays'
-
-photoMode.position(width-20, height-20)
-photoMode.title = 'hide linkage stuff'
-
-let setPositions = function (x,y) {
+function setArmPositions(x,y) {
   angleA = acos((sqrt((circleAX - x) ** 2 + (circleAY - y) ** 2) ** 2 + lengthA1 ** 2 - lengthA2 ** 2) / (2 * sqrt((circleAX - x) ** 2 + (circleAY - y) ** 2) * lengthA1))
   if (aCC.checked){
     angleA = atan((x - circleAX) / (y - circleAY)) - angleA 
@@ -130,34 +147,31 @@ let setPositions = function (x,y) {
   nodeBY = circleBY+(lengthB1*cos(angleB));
 }
 
-q5.draw = function () {
-  background(0.75)
-  lengthA1 = Number(lengthA1Input.value);
-  lengthA2 = Number(lengthA2Input.value);
-  lengthB1 = Number(lengthB1Input.value);
-  lengthB2 = Number(lengthB2Input.value);
-  circleAX = Number(circleAXInput.value);
-  circleAY = Number(circleAYInput.value);
-  circleBX = Number(circleBXInput.value);
-  circleBY = Number(circleBYInput.value);
-  targetX = mouseX;
-  targetY = mouseY;
+function pathToPoints(path,x,y,scale,angle,sampling){ // takes an svg style path (as a string) and converts it to key points (ie straight line is 2 pts but spline is several pts)
+  //uh oh idk what to do here
+}
+
+function stringToPath(textString, font) {
+  const path = font.getPath(textString,0,0,1)
+  log(path.toPathData())
+  return path.toPathData()
+}
+
+function drawOverlays() {
   noStroke()
   if (definitenessOverlay.checked){
-    noStroke()
     for (let x = -halfWidth; x <= halfWidth; x+=fineness.val()){
       for(let y = -halfHeight; y <= halfHeight; y+=fineness.val()){
-        setPositions(x,y);
+        setArmPositions(x,y);
         goodness=norm(dist(nodeAX,nodeAY,nodeBX,nodeBY),0,lengthA2+lengthB2);
         fill(goodness**4,1-2*Math.abs(goodness-0.5)+goodness,goodness**4)//0->black=0,0,0 | 0.5->green=low,1,low | 1-> white = 1,1,1         
         square(x,y,fineness.val())
       }
     }
   } else if (betterOverlay.checked){
-    noStroke()
     for (let x = -halfWidth; x <= halfWidth; x+=fineness.val()){
       for(let y = -halfHeight; y <= halfHeight; y+=fineness.val()){
-        setPositions(x,y);
+        setArmPositions(x,y);
         goodness=norm(acos((lengthA2 ** 2 + lengthB2 ** 2 - dist(nodeAX,nodeAY,nodeBX,nodeBY) ** 2) / (2 * lengthA2 * lengthB2)),0,180);
         fill(goodness,1-2*Math.abs(goodness-0.5)+goodness,goodness)//0->black=0,0,0 | 0.5->green=low,1,low | 1-> white = 1,1,1         
         square(x,y,fineness.val())
@@ -166,50 +180,81 @@ q5.draw = function () {
   } else if (nodesOverlay.checked) {
     for (let x = -halfWidth; x <= halfWidth; x+=fineness.val()){
       for(let y = -halfHeight; y <= halfHeight; y+=fineness.val()){
-        setPositions(x,y);
+        setArmPositions(x,y);
         fill(norm(nodeBX,-halfWidth,halfWidth),0,norm(nodeAX,-halfWidth,halfWidth))
         square(x,y,fineness.val())
       }
     }
   } else if (precisionOverlay.checked){
-    noStroke()
     for (let x = -halfWidth; x <= halfWidth; x+=fineness.val()){
-      allAngles[x]=[]
+      anglesArray[x]=[]
       for(let y = -halfHeight; y <= halfHeight; y+=fineness.val()){
-        allAngles[x][y]=[]
-        setPositions(x,y);
-        allAngles[x][y][0] = angleA;
-        allAngles[x][y][1] = angleB;
+        anglesArray[x][y]=[]
+        setArmPositions(x,y);
+        anglesArray[x][y][0] = angleA;
+        anglesArray[x][y][1] = angleB;
       }
     }
     for (let x = -halfWidth+fineness.val(); x <= halfWidth-fineness.val(); x+=fineness.val()){
       for(let y = -halfHeight+fineness.val(); y <= halfHeight-fineness.val(); y+=fineness.val()){
-        goodness=norm(Math.abs((allAngles[x][y][0]-allAngles[x-fineness.val()][y][0])*(allAngles[x-fineness.val()][y][0]-allAngles[x][y-fineness.val()][0])*(allAngles[x][y][0]-allAngles[x-fineness.val()][y-fineness.val()][0])*(allAngles[x][y][0]-allAngles[x+fineness.val()][y][0])*(allAngles[x][y][0]-allAngles[x][y+fineness.val()][0])*(allAngles[x][y][0]-allAngles[x+fineness.val()][y+fineness.val()][0])*(allAngles[x][y][0]-allAngles[x-fineness.val()][y+fineness.val()][0])*(allAngles[x][y][0]-allAngles[x+fineness.val()][y-fineness.val()][0])*(allAngles[x][y][1]-allAngles[x-fineness.val()][y][1])*(allAngles[x-fineness.val()][y][1]-allAngles[x][y-fineness.val()][1])*(allAngles[x][y][1]-allAngles[x-fineness.val()][y-fineness.val()][1])*(allAngles[x][y][1]-allAngles[x+fineness.val()][y][1])*(allAngles[x][y][1]-allAngles[x][y+fineness.val()][1])*(allAngles[x][y][1]-allAngles[x+fineness.val()][y+fineness.val()][1])*(allAngles[x][y][1]-allAngles[x-fineness.val()][y+fineness.val()][1])*(allAngles[x][y][1]-allAngles[x+fineness.val()][y-fineness.val()][1])/fineness.val()**16),0,precisionTuner.val()*0.000001)
+        goodness=norm(Math.abs((anglesArray[x][y][0]-anglesArray[x-fineness.val()][y][0])*(anglesArray[x-fineness.val()][y][0]-anglesArray[x][y-fineness.val()][0])*(anglesArray[x][y][0]-anglesArray[x-fineness.val()][y-fineness.val()][0])*(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y][0])*(anglesArray[x][y][0]-anglesArray[x][y+fineness.val()][0])*(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y+fineness.val()][0])*(anglesArray[x][y][0]-anglesArray[x-fineness.val()][y+fineness.val()][0])*(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y-fineness.val()][0])*(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y][1])*(anglesArray[x-fineness.val()][y][1]-anglesArray[x][y-fineness.val()][1])*(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y-fineness.val()][1])*(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y][1])*(anglesArray[x][y][1]-anglesArray[x][y+fineness.val()][1])*(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y+fineness.val()][1])*(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y+fineness.val()][1])*(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y-fineness.val()][1])/fineness.val()**16),0,precisionTuner.val()*0.000001)
         fill(goodness)
         square(x,y,fineness.val())
       }
     }
   } else if (betterPrecisionOverlay.checked){
-    noStroke()
     for (let x = -halfWidth; x <= halfWidth; x+=fineness.val()){
-      allAngles[x]=[]
+      anglesArray[x]=[]
       for(let y = -halfHeight; y <= halfHeight; y+=fineness.val()){
-        allAngles[x][y]=[]
-        setPositions(x,y);
-        allAngles[x][y][0] = angleA;
-        allAngles[x][y][1] = angleB;
+        anglesArray[x][y]=[]
+        setArmPositions(x,y);
+        anglesArray[x][y][0] = angleA;
+        anglesArray[x][y][1] = angleB;
       }
     }
     for (let x = -halfWidth+fineness.val(); x <= halfWidth-fineness.val(); x+=fineness.val()){
       for(let y = -halfHeight+fineness.val(); y <= halfHeight-fineness.val(); y+=fineness.val()){
-        goodness=norm(Math.abs(Math.abs(allAngles[x][y][0]-allAngles[x-fineness.val()][y][0])+Math.abs(allAngles[x-fineness.val()][y][0]-allAngles[x][y-fineness.val()][0])+Math.abs(allAngles[x][y][0]-allAngles[x-fineness.val()][y-fineness.val()][0])+Math.abs(allAngles[x][y][0]-allAngles[x+fineness.val()][y][0])+Math.abs(allAngles[x][y][0]-allAngles[x][y+fineness.val()][0])+Math.abs(allAngles[x][y][0]-allAngles[x+fineness.val()][y+fineness.val()][0])+Math.abs(allAngles[x][y][0]-allAngles[x-fineness.val()][y+fineness.val()][0])+Math.abs(allAngles[x][y][0]-allAngles[x+fineness.val()][y-fineness.val()][0])+Math.abs(allAngles[x][y][1]-allAngles[x-fineness.val()][y][1])+Math.abs(allAngles[x-fineness.val()][y][1]-allAngles[x][y-fineness.val()][1])+Math.abs(allAngles[x][y][1]-allAngles[x-fineness.val()][y-fineness.val()][1])+Math.abs(allAngles[x][y][1]-allAngles[x+fineness.val()][y][1])+Math.abs(allAngles[x][y][1]-allAngles[x][y+fineness.val()][1])+Math.abs(allAngles[x][y][1]-allAngles[x+fineness.val()][y+fineness.val()][1])+Math.abs(allAngles[x][y][1]-allAngles[x-fineness.val()][y+fineness.val()][1])+ Math.abs(allAngles[x][y][1]-allAngles[x+fineness.val()][y-fineness.val()][1])/(16*fineness.val()**16)),0,precisionTuner.val()*0.0000000000000000000000000000000000001)
+        goodness=norm(Math.abs(Math.abs(anglesArray[x][y][0]-anglesArray[x-fineness.val()][y][0])+Math.abs(anglesArray[x-fineness.val()][y][0]-anglesArray[x][y-fineness.val()][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x-fineness.val()][y-fineness.val()][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x][y+fineness.val()][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y+fineness.val()][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x-fineness.val()][y+fineness.val()][0])+Math.abs(anglesArray[x][y][0]-anglesArray[x+fineness.val()][y-fineness.val()][0])+Math.abs(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y][1])+Math.abs(anglesArray[x-fineness.val()][y][1]-anglesArray[x][y-fineness.val()][1])+Math.abs(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y-fineness.val()][1])+Math.abs(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y][1])+Math.abs(anglesArray[x][y][1]-anglesArray[x][y+fineness.val()][1])+Math.abs(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y+fineness.val()][1])+Math.abs(anglesArray[x][y][1]-anglesArray[x-fineness.val()][y+fineness.val()][1])+ Math.abs(anglesArray[x][y][1]-anglesArray[x+fineness.val()][y-fineness.val()][1])/(16*fineness.val()**16)),0,precisionTuner.val()*0.0000000000000000000000000000000000001)
         fill(goodness)
         square(x,y,fineness.val())
       }
     }
   } 
+}
+
+q5.draw = function () {
+  
+  if (textStrings.hasOwnProperty(1)){
+    const stringKey = 0
+    log(textStrings)
+    pathToPoints(stringToPath(textStrings[stringKey][0],textStrings[stringKey][1][0]),textStrings[stringKey][2],textStrings[stringKey][3],textStrings[stringKey][4],textStrings[stringKey][5])
+  }
+
+  //Now I am successful in creating path objects using the string
+
+  //I will make a new paths array each loop? or maybe whenever something changes
+
+  lengthA1 = Number(lengthA1Input.value);
+  lengthA2 = Number(lengthA2Input.value);
+  lengthB1 = Number(lengthB1Input.value);
+  lengthB2 = Number(lengthB2Input.value);
+  circleAX = Number(circleAXInput.value);
+  circleAY = Number(circleAYInput.value);
+  circleBX = Number(circleBXInput.value);
+  circleBY = Number(circleBYInput.value);
+  background(0.85)
+  drawOverlays()
+
+
+  if (interactiveMode.checked){
+    targetX = mouseX;
+    targetY = mouseY;
+  }
+  
   if (!photoMode.checked){
-    setPositions(targetX,targetY)
+    beginShape()
+    vertex
+    setArmPositions(targetX,targetY)
     noStroke();
     fill(255,0,0);
     circle(circleAX, circleAY,20);
@@ -234,8 +279,8 @@ q5.draw = function () {
     line(nodeBX, nodeBY, targetX, targetY)
     stroke(0)
     textWeight(2)
-    textAlign(RIGHT)
-    textSize(15)
+    textAlign(RIGHT,BOTTOM)
+    textSize(16)
     noFill()
     text('Hover over parameters to see what they do... or just try them out!',halfWidth-100,-halfHeight+20)
   }
