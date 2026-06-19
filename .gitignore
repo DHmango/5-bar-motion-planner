@@ -1,0 +1,14 @@
+node_modules/.bin/ot
+node_modules/.bin/ot.cmd
+node_modules/.bin/ot.ps1
+node_modules/.package-lock.json
+node_modules/opentype.js/bin/ot
+node_modules/opentype.js/dist/opentype.js
+node_modules/opentype.js/dist/opentype.min.js
+node_modules/opentype.js/dist/opentype.min.js.map
+node_modules/opentype.js/dist/opentype.min.mjs
+node_modules/opentype.js/dist/opentype.min.mjs.map
+node_modules/opentype.js/dist/opentype.mjs
+node_modules/opentype.js/LICENSE
+node_modules/opentype.js/package.json
+node_modules/opentype.js/README.md

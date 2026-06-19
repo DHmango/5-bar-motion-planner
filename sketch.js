@@ -2,7 +2,7 @@
 * Made with q5!
 * https://q5js.org
 */
-import * as type from 'https://cdn.jsdelivr.net/npm/opentype.js/dist/opentype.module.js';
+import * as type from 'https://cdn.jsdelivr.net/npm/opentype.js@2.0.0/dist/opentype.mjs';
 
 await Canvas();
 angleMode(degrees)
@@ -36,6 +36,7 @@ const fontsArray = [] // list of fonts as opentype font objects with their names
 const textStrings = [] //not the points, just the info about each string
 const paths = []
 const fontDropdown = document.createElement('select') //q5 createSelect was not working
+const generateButton = createButton('make path')
 
 const aCC = createCheckbox(); // should segments a go counterclockwise
 const bCC = createCheckbox('',true);
@@ -94,7 +95,7 @@ fontDropdown.style.position = 'fixed'
 fontDropdown.style.left = `${width-100}px`
 fontDropdown.style.top  = '300px'
 
-const buffer = fetch('/NotoSans-Regular.ttf').then(res => res.arrayBuffer()); //preload roboto
+const buffer = fetch('NotoSans-Regular.ttf').then(res => res.arrayBuffer()); //preload roboto
 buffer.then(data => {
   fontsArray.push([type.parse(data),'Broken feature - it doesnt work yet']) //Noto Sans
   const newOption = document.createElement('option')
@@ -121,6 +122,8 @@ addText.position(width-100,280).size(100).addEventListener('click', () => {
   textStrings.push([textInput.value,fontsArray[fontDropdown.value],0,0,72,0]) //Make a simple array which has ['text', font object, topleft x, y, size, angle] <- 0 is straight, 90 is up. size is in pixels
   textInput.value = ''
 });
+
+generateButton.position(width-100,320).size(100).addEventListener('click', generatePaths);
 
 function setArmPositions(x,y) {
   angleA = acos((sqrt((circleAX - x) ** 2 + (circleAY - y) ** 2) ** 2 + lengthA1 ** 2 - lengthA2 ** 2) / (2 * sqrt((circleAX - x) ** 2 + (circleAY - y) ** 2) * lengthA1))
@@ -153,8 +156,13 @@ function pathToPoints(path,x,y,scale,angle,sampling){ // takes an svg style path
 
 function stringToPath(textString, font) {
   const path = font.getPath(textString,0,0,1)
-  log(path.toPathData())
-  return path.toPathData()
+  log(path.toPathData(6))
+  const newPath = type.Path.fromSVG(path.toPathData(6))
+  return path.toPathData(6)
+}
+
+function generatePaths() {
+  //probably just call pathToPoints on all the paths [] but maybe format somethnig something
 }
 
 function drawOverlays() {
@@ -230,8 +238,11 @@ q5.draw = function () {
     pathToPoints(stringToPath(textStrings[stringKey][0],textStrings[stringKey][1][0]),textStrings[stringKey][2],textStrings[stringKey][3],textStrings[stringKey][4],textStrings[stringKey][5])
   }
 
-  //Now I am successful in creating path objects using the string
+  //One big challenge will be the svg manipulator- I need to be able to modify the svg paths by scale, position and angle.
+  //I think I should save the base svg in one place, and the scale and etc. will be saved for actual use without risking damage to svgs 
 
+
+  //Now I am successful in creating path objects using the string
   //I will make a new paths array each loop? or maybe whenever something changes
 
   lengthA1 = Number(lengthA1Input.value);
@@ -242,7 +253,7 @@ q5.draw = function () {
   circleAY = Number(circleAYInput.value);
   circleBX = Number(circleBXInput.value);
   circleBY = Number(circleBYInput.value);
-  background(0.85)
+  background(0.9)
   drawOverlays()
 
 
