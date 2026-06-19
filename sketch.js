@@ -2,7 +2,7 @@
 * Made with q5!
 * https://q5js.org
 */
-import * as type from 'https://cdn.jsdelivr.net/npm/opentype.js@2.0.0/dist/opentype.mjs';
+import * as type from './opentype.mjs';
 
 await Canvas();
 angleMode(degrees)
